@@ -204,7 +204,8 @@ Sorry, your account has been locked.  Please contact our office at {{ 'Global' |
 
         private void RedirectToContinueUrl()
         {
-            throw new NotImplementedException();
+            Response.Redirect( Request.QueryString["user_continue_url"], false );
+            Context.ApplicationInstance.CompleteRequest();
         }
 
         /// <summary>
