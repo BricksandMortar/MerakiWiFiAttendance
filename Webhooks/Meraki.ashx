@@ -1,4 +1,4 @@
-﻿<%@ WebHandler Language="C#" Class="Twilio" %>
+﻿<%@ WebHandler Language="C#" Class="Meraki" %>
 // <copyright>
 // Copyright 2013 by the Spark Development Network
 //
@@ -17,6 +17,7 @@
 //
 
 using System;
+using Newtonsoft.Json;
 using System.Web;
 using System.Threading;
 using System.Collections.Generic;
@@ -101,17 +102,54 @@ class AsynchOperation : IAsyncResult
             return;
         }
 
+        if ( request.ContentType != "application/json" )
+        {
+            response.Write( "got post with unexpected content type: #{request.media_type}" );
+            return;
+        }
+
+        if ( request.Form["secret"] != GlobalAttributesCache.Value( "MerakiSecret" ) )
+        {
+            response.Write( "got post with bad secret: #{map['secret']}" );
+            return;
+        }
+
+        if ( request.Form["version"] != "2.0" )
+        {
+            response.Write( "got post with unexpected version: #{map['version']}" );
+            return;
+        }
+
+        if ( request.Form["type"] != "DevicesSeen" )
+        {
+            response.Write( "got post for event that we're not interested in: #{map['type']}" );
+            return;
+        }
+
         // determine if we should log
         if ( ( !string.IsNullOrEmpty( request.QueryString["Log"] ) && request.QueryString["Log"] == "true" ) || ENABLE_LOGGING )
         {
             WriteToLog();
         }
 
-        if ( request.Form["clientMac"] != null )
+        if ( request.Form["data"] != null )
         {
-            MarkAttendance();
+            var jsonData = JsonConvert.DeserializeObject<dynamic>( request.Form["data"] );
 
-            response.StatusCode = 200;
+            var observations = jsonData["observations"];
+            if ( observations != null )
+            {
+                foreach ( var observation in observations.ToList() )
+                {
+                    MarkAttendance( observation );
+                }
+                response.StatusCode = 200;
+
+            }
+            else
+            {
+                response.StatusCode = 500;
+            }
         }
         else
         {
@@ -126,10 +164,10 @@ class AsynchOperation : IAsyncResult
         _callback( this );
     }
 
-    private void MarkAttendance()
+    private void MarkAttendance( dynamic observation )
     {
         var rockContext = new RockContext();
-        var clientMac = request.Form["clientMac"];
+        string clientMac = observation["clientMac"];
         if ( !String.IsNullOrWhiteSpace( clientMac ) )
         {
             var macAddressValue = new AttributeValueService( rockContext ).Queryable().Where( av =>
@@ -152,9 +190,9 @@ class AsynchOperation : IAsyncResult
                             if ( personAliasId.HasValue )
                             {
                                 var attendanceDateTime = DateTime.Now;
-                                if ( !String.IsNullOrWhiteSpace( request.Form["seenTime"] ) && request.Form["seenTime"].AsDateTime() != null )
+                                if ( !String.IsNullOrWhiteSpace( observation["seenTime"] ) && observation["seenTime"].AsDateTime() != null )
                                 {
-                                    attendanceDateTime = request.Form["seenTime"].AsDateTime().Value;
+                                    attendanceDateTime = observation["seenTime"].AsDateTime().Value;
                                 }
 
                                 var attendanceService = new AttendanceService( rockContext );
