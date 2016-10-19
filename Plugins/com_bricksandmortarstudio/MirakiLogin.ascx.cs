@@ -41,7 +41,7 @@ namespace RockWeb.Plugins.com_bricksandmortarstudio
     [Category( "com_bricksandmortarstudio" )]
     [Description( "Block that associates a mac address with a user." )]
 
-    [AttributeField( Rock.SystemGuid.EntityType.PERSON, "Mac Address", required: true )]
+    [AttributeField( Rock.SystemGuid.EntityType.PERSON, "Mac Address", required: true, defaultValue: "E4A05461-81EE-490C-8866-DAF5D86FDC3E" )]
 
     [LinkedPage( "Help Page", "Page to navigate to when user selects 'Help' option (if blank will use 'ForgotUserName' page route)", false, "", "", 1 )]
     [CodeEditorField( "Login Confirm Caption", "The text (HTML) to display when a user's account needs to be confirmed.", CodeEditorMode.Html, CodeEditorTheme.Rock, 100, false, @"
