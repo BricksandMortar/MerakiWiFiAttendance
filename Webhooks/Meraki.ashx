@@ -40,7 +40,6 @@ public class Meraki : IHttpAsyncHandler
 
     public IAsyncResult BeginProcessRequest( HttpContext context, AsyncCallback cb, Object extraData )
     {
-        context.Response.Write( "<p>Begin IsThreadPoolThread is " + Thread.CurrentThread.IsThreadPoolThread + "</p>\r\n" );
         AsynchOperation asynch = new AsynchOperation( cb, context, extraData );
         asynch.StartAsyncWork();
         return asynch;
@@ -98,6 +97,14 @@ class AsynchOperation : IAsyncResult
 
         if ( request.HttpMethod != "POST" )
         {
+            if ( request.HttpMethod == "GET" )
+            {
+                response.Write( GlobalAttributesCache.Value( "MerakiValidator" ) );
+                response.StatusCode = 200;
+                _completed = true;
+                _callback( this );
+                return;
+            }
             response.Write( "Invalid request type." );
             return;
         }
@@ -156,10 +163,6 @@ class AsynchOperation : IAsyncResult
             response.StatusCode = 500;
         }
 
-
-        _context.Response.Write( "<p>Completion IsThreadPoolThread is " + Thread.CurrentThread.IsThreadPoolThread + "</p>\r\n" );
-
-        _context.Response.Write( "Hello World from Async Handler!" );
         _completed = true;
         _callback( this );
     }

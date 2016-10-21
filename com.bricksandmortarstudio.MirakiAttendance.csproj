@@ -54,27 +54,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Migrations\001_AddData.cs" />
-    <Compile Include="Plugins\com_bricksandmortarstudio\MirakiLogin.ascx.cs">
-      <DependentUpon>MirakiLogin.ascx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Webhooks\Meraki.ashx" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\Rock\Rock\Rock.csproj">
+    <ProjectReference Include="..\..\Rock\Rock\Rock.csproj">
       <Project>{185a31d7-3037-4dae-8797-0459849a84bd}</Project>
       <Name>Rock</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="Plugins\com_bricksandmortarstudio\MirakiLogin.ascx">
-      <SubType>ASPXCodeBehind</SubType>
-    </Content>
-  </ItemGroup>
   <ItemGroup />
+  <ItemGroup>
+    <None Include="Webhooks\Mailgun.ashx" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

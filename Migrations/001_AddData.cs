@@ -21,7 +21,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Rock.Plugin;
-namespace com.centralaz.Baptism.Migrations
+namespace com.bricksandmortarstudio.MirakiAttendance.Migrations
 {
     [MigrationNumber( 1, "1.0.14" )]
     public class CreateDb : Migration
@@ -43,8 +43,11 @@ namespace com.centralaz.Baptism.Migrations
             // Meraki Secret
             RockMigrationHelper.AddGlobalAttribute( "9C204CD0-1233-41C5-818A-C5DA439445AA", "", "", "Meraki Secret", "The Secret code for Meraki server validation", 102, "", "0FD7B99C-9608-416E-929D-B158D62A6172" );
 
+            // Meraki Validator
+            RockMigrationHelper.AddGlobalAttribute( "9C204CD0-1233-41C5-818A-C5DA439445AA", "", "", "Meraki Validator", "The validator for Meraki server validation", 103, "", "6DB139BA-B094-443A-95C3-6E5FBB9FE64B" );
+
             // Mac address
-            RockMigrationHelper.UpdatePersonAttribute( "9C204CD0-1233-41C5-818A-C5DA439445AA", null, "Mac Address", "MacAddress", "", "The Mac Address of the device the person uses", 100, "", "E4A05461-81EE-490C-8866-DAF5D86FDC3E" );
+            RockMigrationHelper.UpdatePersonAttribute( "9C204CD0-1233-41C5-818A-C5DA439445AA", "7B879922-5DA6-41EE-AC0B-45CEFFB99458", "Mac Address", "MacAddress", "", "The Mac Address of the device the person uses", 100, "", "E4A05461-81EE-490C-8866-DAF5D86FDC3E" );
         }
         public override void Down()
         {
