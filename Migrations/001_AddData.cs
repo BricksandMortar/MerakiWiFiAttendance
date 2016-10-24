@@ -35,19 +35,19 @@ namespace com.bricksandmortarstudio.MirakiAttendance.Migrations
                 Set [TakesAttendance] = 1,
                     [AttendanceCountsAsWeekendService] = 1
                 Where [Guid] = 'A81BEE5B-8BF5-4AB8-A8DF-CC0705C1A776'" );
-            RockMigrationHelper.UpdateGroup( null, "A81BEE5B-8BF5-4AB8-A8DF-CC0705C1A776", "Meraki Attendance", "Used to record weekend attendance", null, 0, "DA46E0EC-1183-40C5-BB1B-554D1100FAD9" );
+            RockMigrationHelper.UpdateGroup( null, "A81BEE5B-8BF5-4AB8-A8DF-CC0705C1A776", "Meraki Weekend Attendance", "The group used to record attendance from the Meraki CMX API", null, 0, "DA46E0EC-1183-40C5-BB1B-554D1100FAD9" );
 
             // Meraki Attendance Group
-            RockMigrationHelper.AddGlobalAttribute( "F4399CEF-827B-48B2-A735-F7806FCFE8E8", "", "", "Meraki Attendance Group", "The group used to take attendance from Meraki routers", 101, "DA46E0EC-1183-40C5-BB1B-554D1100FAD9", "D3162F8F-C62F-4023-90FD-BCBE34824908" );
+            RockMigrationHelper.AddGlobalAttribute( "F4399CEF-827B-48B2-A735-F7806FCFE8E8", "", "", "Meraki Attendance Group", "The group used to record attendance from the Meraki CMX API.", 101, "DA46E0EC-1183-40C5-BB1B-554D1100FAD9", "D3162F8F-C62F-4023-90FD-BCBE34824908" );
 
             // Meraki Secret
-            RockMigrationHelper.AddGlobalAttribute( "9C204CD0-1233-41C5-818A-C5DA439445AA", "", "", "Meraki Secret", "The Secret code for Meraki server validation", 102, "", "0FD7B99C-9608-416E-929D-B158D62A6172" );
+            RockMigrationHelper.AddGlobalAttribute( "9C204CD0-1233-41C5-818A-C5DA439445AA", "", "", "Meraki Secret", "The Meraki CMX API Secret.", 102, "", "0FD7B99C-9608-416E-929D-B158D62A6172" );
 
             // Meraki Validator
-            RockMigrationHelper.AddGlobalAttribute( "9C204CD0-1233-41C5-818A-C5DA439445AA", "", "", "Meraki Validator", "The validator for Meraki server validation", 103, "", "6DB139BA-B094-443A-95C3-6E5FBB9FE64B" );
+            RockMigrationHelper.AddGlobalAttribute( "9C204CD0-1233-41C5-818A-C5DA439445AA", "", "", "Meraki Validator", "The Meraki CMX API Validator.", 103, "", "6DB139BA-B094-443A-95C3-6E5FBB9FE64B" );
 
             // Mac address
-            RockMigrationHelper.UpdatePersonAttribute( "9C204CD0-1233-41C5-818A-C5DA439445AA", "7B879922-5DA6-41EE-AC0B-45CEFFB99458", "Mac Address", "MacAddress", "", "The Mac Address of the device the person uses", 100, "", "E4A05461-81EE-490C-8866-DAF5D86FDC3E" );
+            RockMigrationHelper.UpdatePersonAttribute( "9C204CD0-1233-41C5-818A-C5DA439445AA", "7B879922-5DA6-41EE-AC0B-45CEFFB99458", "Mac Address", "MacAddress", "", "The Mac Address of the device used to track a person's attendance.", 100, "", "E4A05461-81EE-490C-8866-DAF5D86FDC3E" );
         }
         public override void Down()
         {

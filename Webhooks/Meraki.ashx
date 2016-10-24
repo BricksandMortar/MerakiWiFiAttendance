@@ -20,6 +20,7 @@ using System;
 using Newtonsoft.Json;
 using System.Web;
 using System.Threading;
+using System.IO;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
@@ -30,6 +31,7 @@ using Rock.Web.Cache;
 
 public class Meraki : IHttpAsyncHandler
 {
+    static public DateTime? _lastProcessedJson { get; set; }
     public bool IsReusable
     {
         get
@@ -41,7 +43,12 @@ public class Meraki : IHttpAsyncHandler
     public IAsyncResult BeginProcessRequest( HttpContext context, AsyncCallback cb, Object extraData )
     {
         AsynchOperation asynch = new AsynchOperation( cb, context, extraData );
-        asynch.StartAsyncWork();
+        if ( !_lastProcessedJson.HasValue || _lastProcessedJson.Value.AddSeconds( 30 ) < RockDateTime.Now )
+        {
+            _lastProcessedJson = RockDateTime.Now;
+            asynch.StartAsyncWork();
+        }
+
         return asynch;
     }
 
@@ -115,19 +122,23 @@ class AsynchOperation : IAsyncResult
             return;
         }
 
-        if ( request.Form["secret"] != GlobalAttributesCache.Value( "MerakiSecret" ) )
+        var sr = new StreamReader( request.InputStream );
+        string content = sr.ReadToEnd();
+        var jsonData = JsonConvert.DeserializeObject<dynamic>( content );
+
+        if ( jsonData["secret"] != GlobalAttributesCache.Value( "MerakiSecret" ) )
         {
             response.Write( "got post with bad secret: #{map['secret']}" );
             return;
         }
 
-        if ( request.Form["version"] != "2.0" )
+        if ( jsonData["version"] != "2.0" )
         {
             response.Write( "got post with unexpected version: #{map['version']}" );
             return;
         }
 
-        if ( request.Form["type"] != "DevicesSeen" )
+        if ( jsonData["type"] != "DevicesSeen" )
         {
             response.Write( "got post for event that we're not interested in: #{map['type']}" );
             return;
@@ -136,17 +147,17 @@ class AsynchOperation : IAsyncResult
         // determine if we should log
         if ( ( !string.IsNullOrEmpty( request.QueryString["Log"] ) && request.QueryString["Log"] == "true" ) || ENABLE_LOGGING )
         {
-            WriteToLog();
+            //WriteToLog();
         }
 
-        if ( request.Form["data"] != null )
+        if ( jsonData["data"] != null )
         {
-            var jsonData = JsonConvert.DeserializeObject<dynamic>( request.Form["data"] );
+            var deviceData = jsonData["data"];
 
-            var observations = jsonData["observations"];
+            var observations = deviceData["observations"];
             if ( observations != null )
             {
-                foreach ( var observation in observations.ToList() )
+                foreach ( var observation in observations )
                 {
                     MarkAttendance( observation );
                 }
@@ -169,58 +180,64 @@ class AsynchOperation : IAsyncResult
 
     private void MarkAttendance( dynamic observation )
     {
-        var rockContext = new RockContext();
-        string clientMac = observation["clientMac"];
-        if ( !String.IsNullOrWhiteSpace( clientMac ) )
+        using ( var rockContext = new RockContext() )
         {
-            var macAddressValue = new AttributeValueService( rockContext ).Queryable().Where( av =>
-                         av.Attribute.Key == "MacAddress" &&
-                         av.Value == clientMac )
-                         .FirstOrDefault();
-
-            if ( macAddressValue != null && macAddressValue.EntityId != null )
+            string clientMac = observation["clientMac"];
+            if ( !String.IsNullOrWhiteSpace( clientMac ) )
             {
-                var attendee = new PersonService( rockContext ).Get( macAddressValue.EntityId.Value );
-                if ( attendee != null )
+                var macAddressValue = new AttributeValueService( rockContext ).Queryable().Where( av =>
+                             av.Attribute.Key == "MacAddress" &&
+                             av.Value == clientMac )
+                             .FirstOrDefault();
+
+                if ( macAddressValue != null && macAddressValue.EntityId != null )
                 {
-                    var attendanceGroupGuid = GlobalAttributesCache.Value( "MerakiAttendanceGroup" ).AsGuidOrNull();
-                    if ( attendanceGroupGuid != null )
+                    var attendee = new PersonService( rockContext ).Get( macAddressValue.EntityId.Value );
+                    if ( attendee != null )
                     {
-                        var group = new GroupService( rockContext ).Get( attendanceGroupGuid.Value );
-                        if ( group != null )
+                        var attendanceGroupGuid = GlobalAttributesCache.Value( "MerakiAttendanceGroup" ).AsGuidOrNull();
+                        if ( attendanceGroupGuid != null )
                         {
-                            int? personAliasId = new PersonAliasService( rockContext ).GetPrimaryAliasId( attendee.Id );
-                            if ( personAliasId.HasValue )
+                            var group = new GroupService( rockContext ).Get( attendanceGroupGuid.Value );
+                            if ( group != null )
                             {
-                                var attendanceDateTime = DateTime.Now;
-                                if ( !String.IsNullOrWhiteSpace( observation["seenTime"] ) && observation["seenTime"].AsDateTime() != null )
+                                int? personAliasId = new PersonAliasService( rockContext ).GetPrimaryAliasId( attendee.Id );
+                                if ( personAliasId.HasValue )
                                 {
-                                    attendanceDateTime = observation["seenTime"].AsDateTime().Value;
-                                }
-
-                                var attendanceService = new AttendanceService( rockContext );
-                                bool alreadyAttended = attendanceService.Queryable().Where( a =>
-                                 a.PersonAliasId == personAliasId &&
-                                 a.GroupId == group.Id &&
-                                 a.StartDateTime.Date == attendanceDateTime.Date )
-                                .Any();
-
-                                if ( !alreadyAttended )
-                                {
-                                    var attendance = new Attendance();
-                                    attendance.GroupId = group.Id;
-                                    attendance.PersonAliasId = personAliasId;
-                                    attendance.StartDateTime = attendanceDateTime;
-                                    attendance.CampusId = group.CampusId;
-
-                                    // check that the attendance record is valid
-                                    if ( !attendance.IsValid )
+                                    var attendanceDateTime = DateTime.Now;
+                                    if ( !String.IsNullOrWhiteSpace( observation["seenTime"] as string ) && observation["seenTime"].AsDateTime() != null )
                                     {
-                                        return;
+                                        attendanceDateTime = observation["seenTime"].AsDateTime().Value;
                                     }
 
-                                    attendanceService.Add( attendance );
-                                    rockContext.SaveChanges( true );
+                                    var attendanceService = new AttendanceService( rockContext );
+                                    bool alreadyAttended = attendanceService.Queryable().Where( a =>
+                                     a.PersonAliasId == personAliasId &&
+                                     a.GroupId == group.Id &&
+                                     a.StartDateTime.Day == attendanceDateTime.Day &&
+                                     a.StartDateTime.Month == attendanceDateTime.Month &&
+                                     a.StartDateTime.Year == attendanceDateTime.Year )
+                                    .Any();
+
+                                    if ( !alreadyAttended )
+                                    {
+                                        var attendance = new Attendance();
+                                        attendance.GroupId = group.Id;
+                                        attendance.PersonAliasId = personAliasId;
+                                        attendance.StartDateTime = attendanceDateTime;
+                                        attendance.EndDateTime = attendanceDateTime.AddSeconds( 1 );
+                                        attendance.CampusId = group.CampusId;
+                                        attendance.DidAttend = true;
+
+                                        // check that the attendance record is valid
+                                        if ( !attendance.IsValid )
+                                        {
+                                            return;
+                                        }
+
+                                        attendanceService.Add( attendance );
+                                        rockContext.SaveChanges( true );
+                                    }
                                 }
                             }
                         }
@@ -243,7 +260,7 @@ class AsynchOperation : IAsyncResult
 
     private void WriteToLog( string message )
     {
-        string logFile = HttpContext.Current.Server.MapPath( "~/App_Data/Logs/MerakiLog.txt" );
+        string logFile = _context.Server.MapPath( "~/App_Data/Logs/MerakiLog.txt" );
 
         // Write to the log, but if an ioexception occurs wait a couple seconds and then try again (up to 3 times).
         var maxRetry = 3;

@@ -54,6 +54,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Migrations\001_AddData.cs" />
+    <Compile Include="Plugins\com_bricksandmortarstudio\MirakiLogin.ascx.cs">
+      <DependentUpon>MirakiLogin.ascx</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -62,9 +65,11 @@
       <Name>Rock</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
-    <None Include="Webhooks\Mailgun.ashx" />
+    <None Include="Webhooks\Meraki.ashx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Plugins\com_bricksandmortarstudio\MirakiLogin.ascx" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
